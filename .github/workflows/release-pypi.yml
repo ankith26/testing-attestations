@@ -23,6 +23,8 @@ jobs:
           out-file-path: "dist"
 
       - name: Verify release attestation
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           for fname in dist/*; do
             if gh attestation verify $fname -R ${{ github.repository }}; then
