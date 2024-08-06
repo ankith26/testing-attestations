@@ -1,0 +1,44 @@
+name: Draft Github Release
+
+on:
+  push:
+    branches: 'release/**'
+
+jobs:
+  draft-release:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      attestations: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4.1.7
+
+      - name: Download all artifacts
+        run: |
+          mkdir pygame-wheels
+          echo "First" > pygame-wheels/a.txt
+          echo "Second" > pygame-wheels/b.txt
+
+      # Strips 'release/' from the ref_name, this helps us access the version
+      # name as 'steps.ver.outputs.VER'
+      - name: Get version
+        id: ver
+        run: echo "VER=${GITHUB_REF_NAME#'release/'}" >> $GITHUB_OUTPUT
+
+      - name: Generate release attestation
+        uses: actions/attest-build-provenance@v1.4.0
+        with:
+          subject-path: "pygame-wheels/*"
+
+      - name: Draft a release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          prerelease: ${{ contains(steps.ver.outputs.VER, 'dev') }}
+          files: pygame-wheels/*
+          name: '${{ steps.ver.outputs.VER }} - {TODO put a title here} [DRAFTED BY CI]'
+          tag_name: ${{ steps.ver.outputs.VER }}
+          target_commitish: ${{ github.ref_name }}
+          generate_release_notes: true
